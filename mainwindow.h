@@ -2,13 +2,28 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QVBoxLayout>
+#include <QLabel>
+#include <QProgressBar>
+#include <QDebug>
+#include "controller.h"
 
-class MainWindow : public QMainWindow
-{
+class MainWindow : public QMainWindow {
     Q_OBJECT
+private:
+    Controller* controller;
+    QWidget* centralWidget;
+    QVBoxLayout* mainLayout;
+    QLabel* statusLabel;
+    QProgressBar* progressBar;
 
 public:
-    MainWindow(QWidget *parent = nullptr);
+    explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
+
+private slots:
+    void handleDataLoaded(bool success);
+    void updateProgress(int progress);
 };
+
 #endif // MAINWINDOW_H
