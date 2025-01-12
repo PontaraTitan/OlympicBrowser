@@ -16,6 +16,8 @@ MainWindow::MainWindow(QWidget *parent)
     mainLayout->addWidget(statusLabel);
     mainLayout->addWidget(progressBar);
 
+    progressBar->setVisible(true);
+
     // Connect signals/slots
     connect(controller, &Controller::dataLoaded, this, &MainWindow::handleDataLoaded);
     connect(controller, &Controller::progressUpdated, this, &MainWindow::updateProgress);
@@ -34,8 +36,9 @@ void MainWindow::handleDataLoaded(bool success) {
     progressBar->setVisible(false);
 
     if (success) {
-        statusLabel->setText("Data loaded successfully!");
-        // You can add code here to update the view with the loaded data
+        statusLabel->setVisible(false);  // Hide the label on success
+        tableView = new OlympicTableView(this);
+        mainLayout->addWidget(tableView);
     } else {
         statusLabel->setText("Error loading data!");
         qDebug() << "Failed to load the CSV file from datasets folder";

@@ -6,7 +6,9 @@
 #include <QLabel>
 #include <QProgressBar>
 #include <QDebug>
+
 #include "controller.h"
+#include "olympictableview.h"
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -16,6 +18,7 @@ private:
     QVBoxLayout* mainLayout;
     QLabel* statusLabel;
     QProgressBar* progressBar;
+    OlympicTableView* tableView;
 
 public:
     explicit MainWindow(QWidget *parent = nullptr);
