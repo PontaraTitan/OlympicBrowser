@@ -64,19 +64,22 @@ void OlympicGraphView::setupUI()
 
 void OlympicGraphView::populateCountryList()
 {
-    QSet<QString> countries;
+    QSet<QString> normalizedCountries;
+    QMap<QString, QString> originalToNormalized;
+
     for (const Athlete& athlete : db->getAthletes()) {
-        countries.insert(athlete.team);
+        QString normalizedName = normalizeCountryName(athlete.team);
+        normalizedCountries.insert(normalizedName);
+        originalToNormalized[athlete.team] = normalizedName;
     }
 
-    QStringList countryList = countries.values();
+    QStringList countryList = normalizedCountries.values();
     std::sort(countryList.begin(), countryList.end());
     countryCombo->addItems(countryList);
 
-    int index = countryList.indexOf("Brazil");
-    if (index >= 0) {
-        countryCombo->setCurrentIndex(index);
-    }
+    countryCombo->setCurrentText("Brazil");
+
+    countryMapping = originalToNormalized;
 }
 
 void OlympicGraphView::updateChart()
@@ -229,7 +232,20 @@ void OlympicGraphView::clearChartData()
     chart->setTitle("");
 }
 
-QMap<int, int> OlympicGraphView::getMedalCountsByYear(const QString& country, const QString& medalType, const QString& season)
+QString OlympicGraphView::normalizeCountryName(const QString& rawName)
+{
+    static QRegularExpression pattern("-(\\d+)$");
+
+    QString normalizedName = rawName;
+    QRegularExpressionMatch match = pattern.match(normalizedName);
+    if (match.hasMatch()) {
+        normalizedName.truncate(match.capturedStart());
+    }
+
+    return normalizedName;
+}
+
+QMap<int, int> OlympicGraphView::getMedalCountsByYear(const QString& normalizedCountry, const QString& medalType, const QString& season)
 {
     QMap<int, int> medalCounts;
 
@@ -249,7 +265,8 @@ QMap<int, int> OlympicGraphView::getMedalCountsByYear(const QString& country, co
     }
 
     for (const Athlete& athlete : db->getAthletes()) {
-        if (athlete.team != country) {
+        QString athleteCountry = normalizeCountryName(athlete.team);
+        if (athleteCountry != normalizedCountry) {
             continue;
         }
 

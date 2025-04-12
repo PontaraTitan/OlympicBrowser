@@ -35,8 +35,10 @@ private:
     void createBarChart();
     void clearChartData();
 
+    QString normalizeCountryName(const QString& rawName);
+
     // Helper functions to get data
-    QMap<int, int> getMedalCountsByYear(const QString& country, const QString& medalType, const QString& season);
+    QMap<int, int> getMedalCountsByYear(const QString& normalizedCountry, const QString& medalType, const QString& season);
     QStringList getYears(const QString& season);
 
 
@@ -58,6 +60,8 @@ private:
 
     ChartType currentChartType;
     DataBase* db;
+
+    QMap<QString, QString> countryMapping;
 };
 
 #endif // OLYMPICGRAPHVIEW_H
