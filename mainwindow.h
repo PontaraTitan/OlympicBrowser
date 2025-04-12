@@ -5,13 +5,35 @@
 #include <QVBoxLayout>
 #include <QLabel>
 #include <QProgressBar>
+#include <QMenuBar>
+#include <QMenu>
+#include <QAction>
 #include <QDebug>
 
 #include "controller.h"
 #include "olympictableview.h"
+#include "olympicgraphview.h"
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
+
+public:
+    enum ViewMode {
+        TableMode,
+        GraphMode
+    };
+
+    explicit MainWindow(QWidget *parent = nullptr);
+    ~MainWindow();
+
+private slots:
+    void handleDataLoaded(bool success);
+    void updateProgress(int progress);
+    void switchView(ViewMode mode);
+
+private:
+    void setupMenu();
+
 private:
     Controller* controller;
     QWidget* centralWidget;
@@ -19,14 +41,14 @@ private:
     QLabel* statusLabel;
     QProgressBar* progressBar;
     OlympicTableView* tableView;
+    OlympicGraphView* graphView;
 
-public:
-    explicit MainWindow(QWidget *parent = nullptr);
-    ~MainWindow();
+    QMenuBar* menuBar;
+    QMenu* viewMenu;
+    QAction* tableViewAction;
+    QAction* graphViewAction;
 
-private slots:
-    void handleDataLoaded(bool success);
-    void updateProgress(int progress);
+    ViewMode currentViewMode;
 };
 
 #endif // MAINWINDOW_H
