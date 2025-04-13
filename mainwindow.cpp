@@ -55,10 +55,12 @@ void MainWindow::setupMenu()
     demographicsAction = graphModeMenu->addAction("Distribuição Demográfica");
     countryComparisonAction = graphModeMenu->addAction("Comparação entre Países");
     geographicAction = graphModeMenu->addAction("Visualização Geográfica");
+    statisticalAction = graphModeMenu->addAction("Análise Estatística");
 
     QList<QAction*> graphModeActions = {
         medalEvolutionAction, demographicsAction,
-        countryComparisonAction, geographicAction
+        countryComparisonAction, geographicAction,
+        statisticalAction
     };
 
     QActionGroup* graphModeGroup = new QActionGroup(this);
@@ -72,6 +74,7 @@ void MainWindow::setupMenu()
     connect(demographicsAction, &QAction::triggered, this, [this]() { onGraphModeChanged(1); });
     connect(countryComparisonAction, &QAction::triggered, this, [this]() { onGraphModeChanged(2); });
     connect(geographicAction, &QAction::triggered, this, [this]() { onGraphModeChanged(3); });
+    connect(statisticalAction, &QAction::triggered, this, [this]() { onGraphModeChanged(4); });
 
     menuBar->addMenu(graphModeMenu);
 }

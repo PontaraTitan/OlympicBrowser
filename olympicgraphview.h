@@ -37,7 +37,8 @@ public:
         MedalEvolution,
         Demographics,
         CountryComparison,
-        GeographicResults
+        GeographicResults,
+        StatisticalAnalysis
     };
 
     explicit OlympicGraphView(QWidget *parent = nullptr);
@@ -67,18 +68,24 @@ private:
     void setupDemographicsControls();
     void setupCountryComparisonControls();
     void setupGeographicControls();
+    void setupStatisticalControls();
 
     void createLineChart();
     void createBarChart();
     void createDemographicsChart();
     void createCountryComparisonChart();
     void createGeographicChart();
+    void createStatisticalChart();
 
     QMap<int, int> getMedalCountsByYear(const QString& country, const QString& medalType, const QString& season);
     QStringList getYears(const QString& season);
 
     void createMedalEvolutionChart() { createLineChart(); }
     void createBarMedalEvolutionChart() { createBarChart(); }
+
+    void createMedalTrendAnalysis(const QString& country, const QString& season);
+    void createAttributeCorrelationAnalysis(const QString& country, const QString& season);
+    void createSportDistributionAnalysis(const QString& country, const QString& season);
 
 private:
     QChartView* chartView;
@@ -90,14 +97,18 @@ private:
     DataBase* db;
 
     QComboBox* modeCombo;
-    QGroupBox* controlsGroup;
-    QGridLayout* controlsLayout;
     QComboBox* countryCombo;
-    QListWidget* multiCountrySelector;
     QComboBox* attributeCombo;
     QComboBox* yearCombo;
     QComboBox* seasonCombo;
     QComboBox* medalTypeCombo;
+
+    QListWidget* multiCountrySelector;
+
+    QGroupBox* controlsGroup;
+
+    QGridLayout* controlsLayout;
+
     QRadioButton* lineChartRadio;
     QRadioButton* barChartRadio;
     QPushButton* updateButton;
