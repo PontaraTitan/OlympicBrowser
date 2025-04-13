@@ -95,6 +95,17 @@ void OlympicGraphView::updateUI()
         delete child;
     }
 
+    countryCombo = nullptr;
+    attributeCombo = nullptr;
+    seasonCombo = nullptr;
+    medalTypeCombo = nullptr;
+    seasonCombo = nullptr;
+    yearCombo = nullptr;
+    lineChartRadio = nullptr;
+    barChartRadio = nullptr;
+    multiCountrySelector = nullptr;
+    updateButton = nullptr;
+
     switch (currentGraphMode) {
         case MedalEvolution:
             setupMedalEvolutionControls();

@@ -97,14 +97,18 @@ private:
     DataBase* db;
 
     QComboBox* modeCombo;
-    QGroupBox* controlsGroup;
-    QGridLayout* controlsLayout;
     QComboBox* countryCombo;
-    QListWidget* multiCountrySelector;
     QComboBox* attributeCombo;
     QComboBox* yearCombo;
     QComboBox* seasonCombo;
     QComboBox* medalTypeCombo;
+
+    QListWidget* multiCountrySelector;
+
+    QGroupBox* controlsGroup;
+
+    QGridLayout* controlsLayout;
+
     QRadioButton* lineChartRadio;
     QRadioButton* barChartRadio;
     QPushButton* updateButton;
