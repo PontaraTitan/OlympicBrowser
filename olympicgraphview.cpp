@@ -520,17 +520,19 @@ void OlympicGraphView::createLineChart()
     QLineSeries *series = new QLineSeries();
     series->setName(country + " - " + medalTypeCombo->currentText());
 
+    QSet<int> actualYears;
     for (auto it = medalCounts.constBegin(); it != medalCounts.constEnd(); ++it) {
         QPointF point(it.key(), it.value());
         series->append(point);
-
-        connect(series, &QLineSeries::hovered, this, [=](const QPointF &point, bool state) {
-            if (state) {
-                QToolTip::showText(QCursor::pos(),
-                                  QString("Ano: %1\nMedalhas: %2").arg(point.x()).arg(point.y()));
-            }
-        });
+        actualYears.insert(it.key());
     }
+
+    connect(series, &QLineSeries::hovered, this, [=](const QPointF &point, bool state) {
+        if (state && actualYears.contains(static_cast<int>(point.x()))) {
+            QToolTip::showText(QCursor::pos(),
+                               QString("Ano: %1\nMedalhas: %2").arg(static_cast<int>(point.x())).arg(static_cast<int>(point.y())));
+        }
+    });
 
     chart->addSeries(series);
 
@@ -589,6 +591,15 @@ void OlympicGraphView::createBarChart()
         *set << it.value();
         categories << QString::number(it.key());
     }
+
+    connect(series, &QBarSeries::hovered, this, [=](bool state, int index, QBarSet* barset) {
+        if (state && index >= 0 && index < categories.size()) {
+            int year = categories.at(index).toInt();
+            int medals = barset->at(index);
+            QToolTip::showText(QCursor::pos(),
+                               QString("Ano: %1\nMedalhas: %2").arg(year).arg(medals));
+        }
+    });
 
     series->append(set);
     chart->addSeries(series);
@@ -689,6 +700,15 @@ void OlympicGraphView::createDemographicsChart()
         categories << QString::number(pair.first);
     }
 
+    connect(series, &QBarSeries::hovered, this, [=](bool state, int index, QBarSet* barset) {
+        if (state && index >= 0 && index < categories.size()) {
+            int attributeValue = categories.at(index).toInt();
+            int count = barset->at(index);
+            QToolTip::showText(QCursor::pos(),
+                               QString("%1: %2\nAtletas: %3").arg(attributeName).arg(attributeValue).arg(count));
+        }
+    });
+
     series->append(set);
     chart->addSeries(series);
 
@@ -777,10 +797,21 @@ void OlympicGraphView::createCountryComparisonChart()
         series->setPen(pen);
         colorIndex++;
 
+        QSet<int> actualYears;
         for (int year : sortedYears) {
             int count = countryData[country].value(year, 0);
             series->append(year, count);
+            actualYears.insert(year);
         }
+
+        connect(series, &QLineSeries::hovered, this, [=](const QPointF &point, bool state) {
+            if (state && actualYears.contains(static_cast<int>(point.x()))) {
+                int year = static_cast<int>(point.x());
+                int medals = static_cast<int>(point.y());
+                QToolTip::showText(QCursor::pos(),
+                                   QString("País: %1\nAno: %2\nMedalhas: %3").arg(country).arg(year).arg(medals));
+            }
+        });
 
         chart->addSeries(series);
     }
@@ -924,6 +955,16 @@ void OlympicGraphView::createGeographicChart()
         } else if (it.key() == "Africa") {
             slice->setColor(QColor(255, 128, 0));
         }
+
+        connect(slice, &QPieSlice::hovered, this, [=](bool state) {
+            if (state) {
+                QToolTip::showText(QCursor::pos(),
+                                   QString("Continente: %1\nMedalhas: %2\nPorcentagem: %3%")
+                                       .arg(slice->label())
+                                       .arg(static_cast<int>(slice->value()))
+                                       .arg(slice->percentage() * 100, 0, 'f', 1));
+            }
+        });
     }
 
     chart->addSeries(pieSeries);

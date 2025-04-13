@@ -58,29 +58,37 @@ private:
     void populateCountryList();
     void clearChartData();
     void updateUI();
+
     QString normalizeCountryName(const QString& rawName);
+
     void saveSettings();
     void loadSettings();
     void setupMedalEvolutionControls();
     void setupDemographicsControls();
     void setupCountryComparisonControls();
     void setupGeographicControls();
+
     void createLineChart();
     void createBarChart();
     void createDemographicsChart();
     void createCountryComparisonChart();
     void createGeographicChart();
+
     QMap<int, int> getMedalCountsByYear(const QString& country, const QString& medalType, const QString& season);
     QStringList getYears(const QString& season);
+
     void createMedalEvolutionChart() { createLineChart(); }
     void createBarMedalEvolutionChart() { createBarChart(); }
 
 private:
     QChartView* chartView;
     QChart* chart;
+
     ChartType currentChartType;
     GraphMode currentGraphMode;
+
     DataBase* db;
+
     QComboBox* modeCombo;
     QGroupBox* controlsGroup;
     QGridLayout* controlsLayout;
@@ -93,6 +101,7 @@ private:
     QRadioButton* lineChartRadio;
     QRadioButton* barChartRadio;
     QPushButton* updateButton;
+
     QMap<QString, QString> countryMapping;
     QMap<QString, QMap<int, int>> medalCache;
 };
