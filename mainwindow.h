@@ -54,6 +54,7 @@ private:
     QAction* demographicsAction;
     QAction* countryComparisonAction;
     QAction* geographicAction;
+    QAction* statisticalAction;
 
     ViewMode currentViewMode;
 };
