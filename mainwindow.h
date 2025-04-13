@@ -5,10 +5,11 @@
 #include <QVBoxLayout>
 #include <QLabel>
 #include <QProgressBar>
+#include <QDebug>
 #include <QMenuBar>
 #include <QMenu>
 #include <QAction>
-#include <QDebug>
+#include <QActionGroup>
 
 #include "controller.h"
 #include "olympictableview.h"
@@ -30,6 +31,7 @@ private slots:
     void handleDataLoaded(bool success);
     void updateProgress(int progress);
     void switchView(ViewMode mode);
+    void onGraphModeChanged(int mode);
 
 private:
     void setupMenu();
@@ -45,8 +47,13 @@ private:
 
     QMenuBar* menuBar;
     QMenu* viewMenu;
+    QMenu* graphModeMenu;
     QAction* tableViewAction;
     QAction* graphViewAction;
+    QAction* medalEvolutionAction;
+    QAction* demographicsAction;
+    QAction* countryComparisonAction;
+    QAction* geographicAction;
 
     ViewMode currentViewMode;
 };
