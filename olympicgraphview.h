@@ -47,6 +47,8 @@ public:
 private slots:
     void updateChart();
     void switchChartType();
+    void exportChart();
+    void generateChartReport();
 
 private:
     enum ChartType {
@@ -112,6 +114,8 @@ private:
     QRadioButton* lineChartRadio;
     QRadioButton* barChartRadio;
     QPushButton* updateButton;
+    QPushButton* exportChartButton;
+    QPushButton* reportChartButton;
 
     QMap<QString, QString> countryMapping;
     QMap<QString, QMap<int, int>> medalCache;

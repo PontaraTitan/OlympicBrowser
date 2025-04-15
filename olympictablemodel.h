@@ -23,7 +23,6 @@ private:
     QStringList headers;
 };
 
-// Custom proxy model for multi-column filtering
 class OlympicFilterProxyModel : public QSortFilterProxyModel {
     Q_OBJECT
 

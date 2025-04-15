@@ -22,6 +22,8 @@ private slots:
     void addFilterRow();
     void removeFilterRow();
     void updateRowCountLabel();
+    void exportData();
+    void generateReport();
 
 private:
     struct FilterRow {
@@ -41,6 +43,8 @@ private:
     QPushButton* addFilterButton;
     QPushButton* applyFiltersButton;
     QPushButton* clearAllButton;
+    QPushButton* exportButton;
+    QPushButton* reportButton;
 
     void setupUI();
     void createFilterRow();

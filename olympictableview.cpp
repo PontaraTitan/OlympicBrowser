@@ -1,5 +1,10 @@
-#include "olympictableview.h"
+#include <QFileDialog>
+#include <QStandardPaths>
 #include <QHeaderView>
+
+#include "olympictableview.h"
+#include "exportmanager.h"
+#include "reportdialog.h"
 
 OlympicTableView::OlympicTableView(QWidget *parent)
     : QWidget(parent)
@@ -10,66 +15,62 @@ OlympicTableView::OlympicTableView(QWidget *parent)
 void OlympicTableView::setupUI() {
     mainLayout = new QVBoxLayout(this);
 
-    // Create filter section
     QWidget* filterWidget = new QWidget(this);
     filtersLayout = new QVBoxLayout(filterWidget);
 
     QHBoxLayout* topControlsLayout = new QHBoxLayout;
 
-    // Initialize buttons
     addFilterButton = new QPushButton("Add Filter", this);
     applyFiltersButton = new QPushButton("Apply Filters", this);
     clearAllButton = new QPushButton("Clear All", this);
+    exportButton = new QPushButton("Export Data", this);
+    reportButton = new QPushButton("Generate Report", this);
 
-    // Row count label
     rowCountLabel = new QLabel(this);
     rowCountLabel->setText("Displaying 0 out of 0 total rows");
 
     topControlsLayout->addWidget(addFilterButton);
     topControlsLayout->addWidget(applyFiltersButton);
     topControlsLayout->addWidget(clearAllButton);
+    topControlsLayout->addWidget(exportButton);
+    topControlsLayout->addWidget(reportButton);
     topControlsLayout->addStretch();
     topControlsLayout->addWidget(rowCountLabel);
 
     filtersLayout->addLayout(topControlsLayout);
     mainLayout->addWidget(filterWidget);
 
-    // Create table view
     tableView = new QTableView(this);
     sourceModel = new OlympicTableModel(this);
     proxyModel = new OlympicFilterProxyModel(this);
     proxyModel->setSourceModel(sourceModel);
     tableView->setModel(proxyModel);
 
-    // Configure table view
     tableView->setSortingEnabled(true);
     tableView->setAlternatingRowColors(true);
     tableView->setSelectionBehavior(QAbstractItemView::SelectRows);
 
-    // Adjust column widths after data is loaded
     QHeaderView* header = tableView->horizontalHeader();
-    header->setSectionResizeMode(QHeaderView::Fixed);  // Prevent automatic resizing
+    header->setSectionResizeMode(QHeaderView::Fixed);
 
-    // Add extra space for sort indicator
-    const int sortIndicatorWidth = 26;  // Typical width for sort indicator
+    const int sortIndicatorWidth = 26;
 
-    // Resize each column to content
     for(int column = 0; column < sourceModel->columnCount(); ++column) {
         tableView->resizeColumnToContents(column);
-        // Add extra width for sort indicator
+
         int currentWidth = tableView->columnWidth(column);
         tableView->setColumnWidth(column, currentWidth + sortIndicatorWidth);
     }
 
     mainLayout->addWidget(tableView);
 
-    // Connect signals
     connect(addFilterButton, &QPushButton::clicked, this, &OlympicTableView::addFilterRow);
     connect(applyFiltersButton, &QPushButton::clicked, this, &OlympicTableView::applyFilter);
     connect(clearAllButton, &QPushButton::clicked, this, &OlympicTableView::clearFilters);
     connect(proxyModel, &QSortFilterProxyModel::layoutChanged, this, &OlympicTableView::updateRowCountLabel);
+    connect(exportButton, &QPushButton::clicked, this, &OlympicTableView::exportData);
+    connect(reportButton, &QPushButton::clicked, this, &OlympicTableView::generateReport);
 
-    // Add initial filter row
     addFilterRow();
 
     updateRowCountLabel();
@@ -103,6 +104,26 @@ void OlympicTableView::createFilterRow() {
     filterRows.append(filterRow);
 }
 
+void OlympicTableView::applyFilter() {
+    proxyModel->clearFilters();
+
+    for (const FilterRow& row : filterRows) {
+        QString pattern = row.patternEdit->text();
+        if (!pattern.isEmpty()) {
+            proxyModel->setColumnFilter(row.columnCombo->currentIndex(), pattern);
+        }
+    }
+    updateRowCountLabel();
+}
+
+void OlympicTableView::clearFilters() {
+    for (const FilterRow& row : filterRows) {
+        row.patternEdit->clear();
+    }
+    proxyModel->clearFilters();
+    updateRowCountLabel();
+}
+
 void OlympicTableView::addFilterRow() {
     createFilterRow();
 }
@@ -129,22 +150,61 @@ void OlympicTableView::updateRowCountLabel() {
                                .arg(totalRows));
 }
 
-void OlympicTableView::applyFilter() {
-    proxyModel->clearFilters();
+void OlympicTableView::exportData() {
+    QString selectedFilter;
+    QString fileName = QFileDialog::getSaveFileName(
+        this,
+        tr("Export Data"),
+        QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation),
+        tr("CSV Files (*.csv);;Excel Files (*.xlsx);;JSON Files (*.json);;HTML Files (*.html);;PDF Files (*.pdf)"),
+        &selectedFilter
+        );
 
-    for (const FilterRow& row : filterRows) {
-        QString pattern = row.patternEdit->text();
-        if (!pattern.isEmpty()) {
-            proxyModel->setColumnFilter(row.columnCombo->currentIndex(), pattern);
+    if (fileName.isEmpty()) {
+        return;
+    }
+
+    QString format;
+    if (selectedFilter.contains("CSV")) {
+        format = "csv";
+        if (!fileName.endsWith(".csv", Qt::CaseInsensitive)) {
+            fileName += ".csv";
+        }
+    } else if (selectedFilter.contains("Excel")) {
+        format = "xlsx";
+        if (!fileName.endsWith(".xlsx", Qt::CaseInsensitive)) {
+            fileName += ".xlsx";
+        }
+    } else if (selectedFilter.contains("JSON")) {
+        format = "json";
+        if (!fileName.endsWith(".json", Qt::CaseInsensitive)) {
+            fileName += ".json";
+        }
+    } else if (selectedFilter.contains("HTML")) {
+        format = "html";
+        if (!fileName.endsWith(".html", Qt::CaseInsensitive)) {
+            fileName += ".html";
+        }
+    } else if (selectedFilter.contains("PDF")) {
+        format = "pdf";
+        if (!fileName.endsWith(".pdf", Qt::CaseInsensitive)) {
+            fileName += ".pdf";
         }
     }
-    updateRowCountLabel();
+
+    ExportManager exportManager;
+    bool success = exportManager.exportFilteredData(tableView, fileName, format);
+
+    if (success) {
+        QMessageBox::information(this, tr("Export Successful"),
+                                 tr("Data has been exported to:\n%1").arg(fileName));
+    } else {
+        QMessageBox::critical(this, tr("Export Failed"),
+                              tr("Failed to export data. Please try again."));
+    }
 }
 
-void OlympicTableView::clearFilters() {
-    for (const FilterRow& row : filterRows) {
-        row.patternEdit->clear();
-    }
-    proxyModel->clearFilters();
-    updateRowCountLabel();
+void OlympicTableView::generateReport() {
+    ReportDialog dialog(this, nullptr, tableView);
+    dialog.exec();
 }

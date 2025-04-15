@@ -64,7 +64,6 @@ void OlympicTableModel::refreshData() {
     endResetModel();
 }
 
-// OlympicFilterProxyModel implementation
 OlympicFilterProxyModel::OlympicFilterProxyModel(QObject *parent)
     : QSortFilterProxyModel(parent)
 {

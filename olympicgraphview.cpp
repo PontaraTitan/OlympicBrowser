@@ -1,9 +1,14 @@
-#include "olympicgraphview.h"
+#include <QDebug>
+#include <QHorizontalBarSeries>
+#include <QFileDialog>
+#include <QStandardPaths>
+#include <QMessageBox>
 
 #include <algorithm>
 
-#include <QDebug>
-#include <QHorizontalBarSeries>
+#include "olympicgraphview.h"
+#include "exportmanager.h"
+#include "reportdialog.h"
 
 OlympicGraphView::OlympicGraphView(QWidget *parent)
     : QWidget(parent)
@@ -34,6 +39,13 @@ void OlympicGraphView::setupUI()
     });
     modeLayout->addWidget(modeCombo);
 
+    QHBoxLayout* exportLayout = new QHBoxLayout();
+    exportChartButton = new QPushButton("Exportar Gráfico", this);
+    reportChartButton = new QPushButton("Gerar Relatório", this);
+    exportLayout->addStretch();
+    exportLayout->addWidget(exportChartButton);
+    exportLayout->addWidget(reportChartButton);
+
     controlsGroup = new QGroupBox("Controles do Gráfico", this);
     controlsLayout = new QGridLayout(controlsGroup);
 
@@ -44,6 +56,7 @@ void OlympicGraphView::setupUI()
     chartView->setRenderHint(QPainter::Antialiasing);
 
     mainLayout->addWidget(modeGroup);
+    mainLayout->addLayout(exportLayout);
     mainLayout->addWidget(controlsGroup);
     mainLayout->addWidget(chartView);
 
@@ -51,6 +64,8 @@ void OlympicGraphView::setupUI()
             [this](int index) {
                 setGraphMode(static_cast<GraphMode>(index));
             });
+    connect(exportChartButton, &QPushButton::clicked, this, &OlympicGraphView::exportChart);
+    connect(reportChartButton, &QPushButton::clicked, this, &OlympicGraphView::generateChartReport);
 }
 
 void OlympicGraphView::populateCountryList()
@@ -186,6 +201,65 @@ void OlympicGraphView::updateChart()
 void OlympicGraphView::switchChartType()
 {
     updateChart();
+}
+
+void OlympicGraphView::exportChart() {
+    QString selectedFilter;
+    QString fileName = QFileDialog::getSaveFileName(
+        this,
+        tr("Export Chart"),
+        QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation),
+        tr("PNG Files (*.png);;JPEG Files (*.jpg);;BMP Files (*.bmp);;SVG Files (*.svg);;PDF Files (*.pdf)"),
+        &selectedFilter
+        );
+
+    if (fileName.isEmpty()) {
+            return;
+    }
+
+    QString format;
+    if (selectedFilter.contains("PNG")) {
+            format = "png";
+            if (!fileName.endsWith(".png", Qt::CaseInsensitive)) {
+                fileName += ".png";
+            }
+    } else if (selectedFilter.contains("JPEG")) {
+            format = "jpg";
+            if (!fileName.endsWith(".jpg", Qt::CaseInsensitive)) {
+                fileName += ".jpg";
+            }
+    } else if (selectedFilter.contains("BMP")) {
+            format = "bmp";
+            if (!fileName.endsWith(".bmp", Qt::CaseInsensitive)) {
+                fileName += ".bmp";
+            }
+    } else if (selectedFilter.contains("SVG")) {
+            format = "svg";
+            if (!fileName.endsWith(".svg", Qt::CaseInsensitive)) {
+                fileName += ".svg";
+            }
+    } else if (selectedFilter.contains("PDF")) {
+            format = "pdf";
+            if (!fileName.endsWith(".pdf", Qt::CaseInsensitive)) {
+                fileName += ".pdf";
+            }
+    }
+
+    ExportManager exportManager;
+    bool success = exportManager.exportChart(chart, fileName, format);
+
+    if (success) {
+            QMessageBox::information(this, tr("Export Successful"),
+                                     tr("Chart has been exported to:\n%1").arg(fileName));
+    } else {
+            QMessageBox::critical(this, tr("Export Failed"),
+                                  tr("Failed to export chart. Please try again."));
+    }
+}
+
+void OlympicGraphView::generateChartReport() {
+    ReportDialog dialog(this, chart, nullptr);
+    dialog.exec();
 }
 
 QMap<int, int> OlympicGraphView::getMedalCountsByYear(const QString& normalizedCountry, const QString& medalType, const QString& season)
@@ -556,7 +630,6 @@ void OlympicGraphView::setupStatisticalControls()
 
     populateCountryList();
 
-    // Restaurar tipo de análise selecionado anteriormente
     QSettings settings("OlympicBrowser", "GraphView");
     int analysisType = settings.value("AnalysisType", 0).toInt();
     if (analysisType < analysisTypeCombo->count()) {
@@ -1065,7 +1138,6 @@ void OlympicGraphView::createStatisticalChart()
     if (analysisTypeCombo) {
         analysisType = analysisTypeCombo->currentIndex();
     } else {
-        // Fallback para as configurações se o combo não estiver disponível
         QSettings settings("OlympicBrowser", "GraphView");
         analysisType = settings.value("AnalysisType", 0).toInt();
     }
@@ -1085,17 +1157,14 @@ void OlympicGraphView::createStatisticalChart()
 
 void OlympicGraphView::createMedalTrendAnalysis(const QString &country, const QString &season)
 {
-    // Obter dados de medalhas por ano
     QMap<int, int> goldData = getMedalCountsByYear(country, "Gold", season);
     QMap<int, int> silverData = getMedalCountsByYear(country, "Silver", season);
     QMap<int, int> bronzeData = getMedalCountsByYear(country, "Bronze", season);
 
-    // Calcular a linha de tendência linear (regressão simples)
     QList<int> years;
     QList<int> totalMedals;
     QSet<int> allYears;
 
-    // Combinar todos os anos de dados
     for (auto it = goldData.constBegin(); it != goldData.constEnd(); ++it) {
         allYears.insert(it.key());
     }
@@ -1109,14 +1178,12 @@ void OlympicGraphView::createMedalTrendAnalysis(const QString &country, const QS
     QList<int> sortedYears = allYears.values();
     std::sort(sortedYears.begin(), sortedYears.end());
 
-    // Criar dados para regressão
     for (int year : sortedYears) {
         int total = goldData.value(year, 0) + silverData.value(year, 0) + bronzeData.value(year, 0);
         years.append(year);
         totalMedals.append(total);
     }
 
-    // Calcular médias
     double sumX = 0, sumY = 0;
     for (int i = 0; i < years.size(); i++) {
         sumX += years[i];
@@ -1125,7 +1192,6 @@ void OlympicGraphView::createMedalTrendAnalysis(const QString &country, const QS
     double meanX = sumX / years.size();
     double meanY = sumY / years.size();
 
-    // Calcular coeficientes de regressão
     double numerator = 0, denominator = 0;
     for (int i = 0; i < years.size(); i++) {
         numerator += (years[i] - meanX) * (totalMedals[i] - meanY);
@@ -1138,7 +1204,6 @@ void OlympicGraphView::createMedalTrendAnalysis(const QString &country, const QS
     }
     double intercept = meanY - slope * meanX;
 
-    // Criar séries para o gráfico
     QLineSeries *goldSeries = new QLineSeries();
     goldSeries->setName("Ouro");
 
@@ -1159,7 +1224,6 @@ void OlympicGraphView::createMedalTrendAnalysis(const QString &country, const QS
     trendPen.setColor(Qt::red);
     trendSeries->setPen(trendPen);
 
-    // Preencher séries com dados
     for (int year : sortedYears) {
         goldSeries->append(year, goldData.value(year, 0));
         silverSeries->append(year, silverData.value(year, 0));
@@ -1167,19 +1231,16 @@ void OlympicGraphView::createMedalTrendAnalysis(const QString &country, const QS
         int total = goldData.value(year, 0) + silverData.value(year, 0) + bronzeData.value(year, 0);
         totalSeries->append(year, total);
 
-        // Adicionar valor da linha de tendência
         double trendValue = intercept + slope * year;
         trendSeries->append(year, trendValue);
     }
 
-    // Adicionar séries ao gráfico
     chart->addSeries(goldSeries);
     chart->addSeries(silverSeries);
     chart->addSeries(bronzeSeries);
     chart->addSeries(totalSeries);
     chart->addSeries(trendSeries);
 
-    // Configurar eixos
     QValueAxis *axisX = new QValueAxis();
     QValueAxis *axisY = new QValueAxis();
 
@@ -1191,14 +1252,12 @@ void OlympicGraphView::createMedalTrendAnalysis(const QString &country, const QS
         if (!sortedYears.isEmpty()) {
         axisX->setRange(sortedYears.first(), sortedYears.last());
 
-        // Encontrar valor máximo em todas as séries
         int maxY = 0;
         for (int year : sortedYears) {
             int total = goldData.value(year, 0) + silverData.value(year, 0) + bronzeData.value(year, 0);
             maxY = qMax(maxY, total);
         }
 
-        // Considerar também o valor máximo na linha de tendência
         double maxTrend = intercept + slope * sortedYears.last();
         maxY = qMax(maxY, static_cast<int>(maxTrend) + 1);
 
@@ -1219,7 +1278,6 @@ void OlympicGraphView::createMedalTrendAnalysis(const QString &country, const QS
     trendSeries->attachAxis(axisX);
     trendSeries->attachAxis(axisY);
 
-    // Adicionar tooltips
     for (QLineSeries* series : {goldSeries, silverSeries, bronzeSeries, totalSeries}) {
         connect(series, &QLineSeries::hovered, this, [=](const QPointF &point, bool state) {
             if (state) {
@@ -1232,7 +1290,6 @@ void OlympicGraphView::createMedalTrendAnalysis(const QString &country, const QS
         });
     }
 
-    // Adicionar estatísticas ao título
     double averageMedals = meanY;
     double growthRate = slope;
     QString trendDirection = (slope > 0) ? "crescente" : (slope < 0) ? "decrescente" : "estável";
@@ -1246,7 +1303,6 @@ void OlympicGraphView::createMedalTrendAnalysis(const QString &country, const QS
 
 void OlympicGraphView::createAttributeCorrelationAnalysis(const QString &country, const QString &season)
 {
-    // Vamos analisar a correlação entre idade, altura, peso e medalhas
     QMap<QString, QVector<float>> attributes;
     QVector<float> ages;
     QVector<float> heights;
@@ -1262,7 +1318,6 @@ void OlympicGraphView::createAttributeCorrelationAnalysis(const QString &country
             continue;
         }
 
-        // Ignorar atletas com dados incompletos
         if (athlete.age <= 0 || athlete.height <= 0 || athlete.weight <= 0) {
             continue;
         }
@@ -1271,7 +1326,6 @@ void OlympicGraphView::createAttributeCorrelationAnalysis(const QString &country
         heights.append(athlete.height);
         weights.append(athlete.weight);
 
-        // 1 se tem medalha, 0 se não
         float medalValue = (!athlete.medal.isEmpty() && athlete.medal != "NA") ? 1.0f : 0.0f;
         hasMedal.append(medalValue);
     }
@@ -1280,19 +1334,16 @@ void OlympicGraphView::createAttributeCorrelationAnalysis(const QString &country
     attributes["Altura"] = heights;
     attributes["Peso"] = weights;
 
-    // Calcular correlações
     QMap<QString, float> correlations;
     for (auto it = attributes.constBegin(); it != attributes.constEnd(); ++it) {
         const QString& attributeName = it.key();
         const QVector<float>& attributeValues = it.value();
 
-        // Verificar se temos dados suficientes
         if (attributeValues.size() < 2) {
             correlations[attributeName] = 0.0f;
             continue;
         }
 
-        // Calcular correlação
         float sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0, sumY2 = 0;
         int n = attributeValues.size();
 
@@ -1318,11 +1369,9 @@ void OlympicGraphView::createAttributeCorrelationAnalysis(const QString &country
         correlations[attributeName] = correlation;
     }
 
-    // Criar gráfico de barras para correlações
     QBarSeries *series = new QBarSeries();
     QBarSet *correlationSet = new QBarSet("Correlação com Medalhas");
 
-    // Adicionar valores absolutos para barras
     QStringList categories;
     for (auto it = correlations.constBegin(); it != correlations.constEnd(); ++it) {
         *correlationSet << qAbs(it.value());
@@ -1332,7 +1381,6 @@ void OlympicGraphView::createAttributeCorrelationAnalysis(const QString &country
     series->append(correlationSet);
     chart->addSeries(series);
 
-    // Configurar eixos
     QBarCategoryAxis *axisX = new QBarCategoryAxis();
     axisX->append(categories);
     chart->addAxis(axisX, Qt::AlignBottom);
@@ -1346,7 +1394,6 @@ void OlympicGraphView::createAttributeCorrelationAnalysis(const QString &country
     chart->addAxis(axisY, Qt::AlignLeft);
     series->attachAxis(axisY);
 
-    // Adicionar tooltip
     connect(series, &QBarSeries::hovered, this, [=](bool state, int index, QBarSet* barset) {
         if (state && index >= 0 && index < categories.size()) {
             QString attribute = categories.at(index);
@@ -1381,7 +1428,6 @@ void OlympicGraphView::createAttributeCorrelationAnalysis(const QString &country
         }
     });
 
-    // Calcular estatísticas adicionais
     int totalAthletes = ages.size();
     int medalCount = 0;
     float avgAge = 0, avgHeight = 0, avgWeight = 0;
@@ -1423,7 +1469,6 @@ void OlympicGraphView::createAttributeCorrelationAnalysis(const QString &country
 
 void OlympicGraphView::createSportDistributionAnalysis(const QString &country, const QString &season)
 {
-    // Analisar distribuição de medalhas por esporte
     QMap<QString, int> sportMedals;
     QMap<QString, int> sportAthletes;
 
@@ -1436,16 +1481,13 @@ void OlympicGraphView::createSportDistributionAnalysis(const QString &country, c
             continue;
         }
 
-        // Contar atletas por esporte
         sportAthletes[athlete.sport]++;
 
-        // Contar medalhas por esporte
         if (!athlete.medal.isEmpty() && athlete.medal != "NA") {
             sportMedals[athlete.sport]++;
         }
     }
 
-    // Calcular eficiência por esporte (medalhas/atletas)
     QMap<QString, float> sportEfficiency;
     QVector<QPair<QString, float>> sortedEfficiency;
 
@@ -1458,23 +1500,19 @@ void OlympicGraphView::createSportDistributionAnalysis(const QString &country, c
             float efficiency = static_cast<float>(medals) / athletes;
             sportEfficiency[sport] = efficiency;
 
-            // Adicionar apenas esportes com pelo menos 5 atletas para evitar estatísticas enviesadas
             if (athletes >= 5) {
                 sortedEfficiency.append(qMakePair(sport, efficiency));
             }
         }
     }
 
-    // Ordenar por eficiência
     std::sort(sortedEfficiency.begin(), sortedEfficiency.end(),
               [](const QPair<QString, float>& a, const QPair<QString, float>& b) {
                   return a.second > b.second;
               });
 
-    // Limitar para os 10 melhores esportes
     int maxSports = qMin(10, sortedEfficiency.size());
 
-    // Criar gráfico de barras horizontais para eficiência
     QHorizontalBarSeries *series = new QHorizontalBarSeries();
     QBarSet *efficiencySet = new QBarSet("Eficiência (Medalhas/Atleta)");
 
@@ -1483,7 +1521,6 @@ void OlympicGraphView::createSportDistributionAnalysis(const QString &country, c
         const QPair<QString, float>& pair = sortedEfficiency[i];
         *efficiencySet << pair.second;
 
-        // Adicionar número de atletas e medalhas ao nome do esporte
         int athletes = sportAthletes.value(pair.first, 0);
         int medals = sportMedals.value(pair.first, 0);
         categories << QString("%1 (%2 atletas, %3 medalhas)")
@@ -1495,7 +1532,6 @@ void OlympicGraphView::createSportDistributionAnalysis(const QString &country, c
     series->append(efficiencySet);
     chart->addSeries(series);
 
-    // Configurar eixos horizontais
     QBarCategoryAxis *axisY = new QBarCategoryAxis();
     axisY->append(categories);
     chart->addAxis(axisY, Qt::AlignLeft);
@@ -1505,17 +1541,15 @@ void OlympicGraphView::createSportDistributionAnalysis(const QString &country, c
     axisX->setLabelFormat("%.2f");
     axisX->setTitleText("Eficiência (Medalhas por Atleta)");
 
-    // Determinar o valor máximo para o eixo X
     float maxEfficiency = 0.0f;
     if (!sortedEfficiency.isEmpty()) {
         maxEfficiency = sortedEfficiency.first().second;
     }
-    axisX->setRange(0, maxEfficiency * 1.1); // Adicionar 10% para espaço
+    axisX->setRange(0, maxEfficiency * 1.1);
 
     chart->addAxis(axisX, Qt::AlignBottom);
     series->attachAxis(axisX);
 
-    // Adicionar tooltip
     connect(series, &QBarSeries::hovered, this, [=](bool state, int index, QBarSet* barset) {
         if (state && index >= 0 && index < maxSports) {
             const QPair<QString, float>& pair = sortedEfficiency[index];
@@ -1536,7 +1570,6 @@ void OlympicGraphView::createSportDistributionAnalysis(const QString &country, c
         }
     });
 
-    // Calcular estatísticas gerais
     int totalAthletes = 0;
     int totalMedals = 0;
     int totalSports = sportAthletes.size();

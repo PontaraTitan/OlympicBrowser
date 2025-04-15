@@ -29,7 +29,7 @@ class DataBase : public QObject {
 private:
     QVector<Athlete> athletes;
     static DataBase* instance;
-    DataBase(QObject *parent = nullptr);  // Constructor made private for singleton
+    DataBase(QObject *parent = nullptr);
 
 public:
     static DataBase* getInstance();
