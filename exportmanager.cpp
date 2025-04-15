@@ -53,12 +53,12 @@ bool ExportManager::exportFilteredData(QTableView* tableView, const QString& fil
 }
 
 bool ExportManager::generateReport(QWidget* parent, const QString& title, const QString& description,
-                                 QChart* chart, QTableView* tableView)
+                                   QChart* chart, QTableView* tableView)
 {
     QString fileName = QFileDialog::getSaveFileName(parent,
-                                                  tr("Salvar Relatório"),
+                                                    tr("Salvar Relatório"),
                                                   QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation),
-                                                  tr("PDF Files (*.pdf)"));
+                                                    tr("PDF Files (*.pdf)"));
     if (fileName.isEmpty()) {
         return false;
     }
@@ -75,17 +75,17 @@ bool ExportManager::generateReport(QWidget* parent, const QString& title, const 
     QTextDocument document;
 
     QString html = "<html><head><style>"
-                  "body { font-family: Arial, sans-serif; }"
-                  "h1 { color: #003366; }"
-                  "h2 { color: #0066cc; }"
-                  ".header { background-color: #f0f0f0; padding: 10px; }"
-                  ".content { padding: 10px; }"
-                  "table { border-collapse: collapse; width: 100%; }"
-                  "th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }"
-                  "th { background-color: #f2f2f2; }"
-                  "tr:nth-child(even) { background-color: #f9f9f9; }"
-                  ".footer { text-align: center; margin-top: 20px; font-size: 0.8em; color: #666; }"
-                  "</style></head><body>";
+                   "body { font-family: Arial, sans-serif; }"
+                   "h1 { color: #003366; }"
+                   "h2 { color: #0066cc; }"
+                   ".header { background-color: #f0f0f0; padding: 10px; }"
+                   ".content { padding: 10px; }"
+                   "table { border-collapse: collapse; width: 100%; }"
+                   "th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }"
+                   "th { background-color: #f2f2f2; }"
+                   "tr:nth-child(even) { background-color: #f9f9f9; }"
+                   ".footer { text-align: center; margin-top: 20px; font-size: 0.8em; color: #666; }"
+                   "</style></head><body>";
 
     QDateTime currentDateTime = QDateTime::currentDateTime();
     html += "<div class='header'>";
@@ -97,14 +97,27 @@ bool ExportManager::generateReport(QWidget* parent, const QString& title, const 
     html += "<p>" + description + "</p>";
 
     if (chart) {
-        QChartView tempChartView(chart);
-        tempChartView.resize(chart->size().toSize());
-        tempChartView.setRenderHint(QPainter::Antialiasing);
+        QRectF chartRect = chart->geometry();
 
-        QPixmap pixmap(chart->size().toSize());
+        int width = std::max(800, static_cast<int>(chartRect.width() * 1.5));
+        int height = std::max(600, static_cast<int>(chartRect.height() * 1.5));
+
+        QPixmap pixmap(width, height);
         pixmap.fill(Qt::white);
-        QPainter painter(&pixmap);
-        tempChartView.render(&painter);
+
+        QPainter chartPainter(&pixmap);
+        chartPainter.setRenderHint(QPainter::Antialiasing);
+
+        chartPainter.setWindow(chartRect.toRect());
+        chartPainter.setViewport(QRect(
+            width * 0.1,
+            height * 0.1,
+            width * 0.8,
+            height * 0.8
+            ));
+
+        chart->scene()->render(&chartPainter, QRectF(), chartRect);
+        chartPainter.end();
 
         QByteArray byteArray;
         QBuffer buffer(&byteArray);
@@ -124,7 +137,7 @@ bool ExportManager::generateReport(QWidget* parent, const QString& title, const 
     html += "<div class='footer'>";
     html += "<p>Exploração Interativa para a análise de dados de 120 Anos de História Olímpica</p>";
     html += "<p>© " + QString::number(currentDateTime.date().year()) + " Renan Cezar Girardin Pimentel Pontara</p>";
-    html += "</div>";
+            html += "</div>";
 
     html += "</div></body></html>";
 
@@ -134,7 +147,7 @@ bool ExportManager::generateReport(QWidget* parent, const QString& title, const 
     QMessageBox::information(parent, tr("Relatório Gerado"),
                            tr("Relatório salvo com sucesso em:\n%1").arg(fileName));
 
-    return true;
+        return true;
 }
 
 bool ExportManager::exportToCSV(QTableView* tableView, const QString& fileName)
@@ -325,15 +338,22 @@ bool ExportManager::exportChartToImage(QChart* chart, const QString& fileName, c
         return false;
     }
 
-    QChartView tempChartView(chart);
-    tempChartView.resize(chart->size().toSize());
-    tempChartView.setRenderHint(QPainter::Antialiasing);
+    QRectF chartRect = chart->geometry();
 
-    QPixmap pixmap(chart->size().toSize());
+    int width = std::max(800, static_cast<int>(chartRect.width() * 1.5));
+    int height = std::max(600, static_cast<int>(chartRect.height() * 1.5));
+
+    QPixmap pixmap(width, height);
     pixmap.fill(Qt::white);
 
     QPainter painter(&pixmap);
-    tempChartView.render(&painter);
+    painter.setRenderHint(QPainter::Antialiasing);
+
+    painter.setWindow(chartRect.toRect());
+    painter.setViewport(QRect(0, 0, width, height));
+
+    chart->scene()->render(&painter, QRectF(), chartRect);
+    painter.end();
 
     return pixmap.save(fileName, format.toUpper().toUtf8().constData());
 }
@@ -344,18 +364,29 @@ bool ExportManager::exportChartToPDF(QChart* chart, const QString& fileName)
         return false;
     }
 
-    QChartView tempChartView(chart);
-    tempChartView.resize(chart->size().toSize());
-    tempChartView.setRenderHint(QPainter::Antialiasing);
+    QRectF chartRect = chart->geometry();
 
     QPrinter printer(QPrinter::HighResolution);
     printer.setOutputFormat(QPrinter::PdfFormat);
     printer.setOutputFileName(fileName);
     printer.setPageSize(QPageSize(QPageSize::A4));
+    printer.setPageOrientation(QPageLayout::Landscape);
     printer.setPageMargins(QMarginsF(20, 20, 20, 20), QPageLayout::Millimeter);
 
+    QRectF pageRect = printer.pageRect(QPrinter::DevicePixel);
+
     QPainter painter(&printer);
-    tempChartView.render(&painter);
+    painter.setRenderHint(QPainter::Antialiasing);
+
+    painter.setWindow(chartRect.toRect());
+    painter.setViewport(QRect(
+        pageRect.width() * 0.1,
+        pageRect.height() * 0.1,
+        pageRect.width() * 0.8,
+        pageRect.height() * 0.8
+        ));
+
+    chart->scene()->render(&painter, QRectF(), chartRect);
     painter.end();
 
     return true;
@@ -367,19 +398,30 @@ bool ExportManager::exportChartToSVG(QChart* chart, const QString& fileName)
         return false;
     }
 
-    QChartView tempChartView(chart);
-    tempChartView.resize(chart->size().toSize());
-    tempChartView.setRenderHint(QPainter::Antialiasing);
+    QRectF chartRect = chart->geometry();
+
+    int width = std::max(800, static_cast<int>(chartRect.width() * 1.5));
+    int height = std::max(600, static_cast<int>(chartRect.height() * 1.5));
 
     QSvgGenerator generator;
     generator.setFileName(fileName);
-    generator.setSize(chart->size().toSize());
-    generator.setViewBox(QRect(0, 0, chart->size().width(), chart->size().height()));
-    generator.setTitle("Olympic Data Chart");
+    generator.setSize(QSize(width, height));
+    generator.setViewBox(QRect(0, 0, width, height));
+    generator.setTitle(chart->title().isEmpty() ? "Olympic Data Chart" : chart->title());
     generator.setDescription("Chart generated by Olympic Browser");
 
     QPainter painter(&generator);
-    tempChartView.render(&painter);
+    painter.setRenderHint(QPainter::Antialiasing);
+
+    painter.setWindow(chartRect.toRect());
+    painter.setViewport(QRect(
+        width * 0.1,
+        height * 0.1,
+        width * 0.8,
+        height * 0.8
+        ));
+
+    chart->scene()->render(&painter, QRectF(), chartRect);
     painter.end();
 
     return true;
