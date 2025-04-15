@@ -20,13 +20,10 @@ class ExportManager : public QObject {
 public:
     explicit ExportManager(QObject *parent = nullptr);
 
-    // Exportar visualização
     bool exportChart(QChart* chart, const QString& fileName, const QString& format);
 
-    // Exportar dados filtrados
     bool exportFilteredData(QTableView* tableView, const QString& fileName, const QString& format);
 
-    // Gerar relatório
     bool generateReport(QWidget* parent, const QString& title, const QString& description,
                         QChart* chart = nullptr, QTableView* tableView = nullptr);
 
