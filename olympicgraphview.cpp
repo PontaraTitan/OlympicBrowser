@@ -8,6 +8,7 @@
 
 #include "olympicgraphview.h"
 #include "exportmanager.h"
+#include "reportdialog.h"
 
 OlympicGraphView::OlympicGraphView(QWidget *parent)
     : QWidget(parent)
@@ -257,118 +258,8 @@ void OlympicGraphView::exportChart() {
 }
 
 void OlympicGraphView::generateChartReport() {
-    ExportManager exportManager;
-
-    // Determinar o título e descrição com base no modo atual
-    QString title;
-    QString description;
-
-    switch (currentGraphMode) {
-    case MedalEvolution:
-            title = "Medal Evolution Report";
-            if (countryCombo) {
-                description = QString("This report shows the evolution of Olympic medals for %1 over time. ")
-                                  .arg(countryCombo->currentText());
-
-                QString medalType;
-                if (medalTypeCombo) {
-                    medalType = medalTypeCombo->currentText();
-                    description += QString("Medal type: %1. ").arg(medalType);
-                }
-
-                QString season;
-                if (seasonCombo) {
-                    season = seasonCombo->currentText();
-                    description += QString("Season: %1.").arg(season);
-                }
-            }
-            break;
-
-    case Demographics:
-            title = "Demographics Distribution Report";
-            if (countryCombo && attributeCombo) {
-                description = QString("This report shows the distribution of %1 for athletes from %2. ")
-                                  .arg(attributeCombo->currentText())
-                                  .arg(countryCombo->currentText());
-
-                if (seasonCombo) {
-                    QString season = seasonCombo->currentText();
-                    description += QString("Season: %1.").arg(season);
-                }
-            }
-            break;
-
-    case CountryComparison:
-            title = "Country Comparison Report";
-            description = "This report shows a comparison of Olympic performance between selected countries. ";
-
-            if (medalTypeCombo) {
-                QString medalType = medalTypeCombo->currentText();
-                description += QString("Medal type: %1. ").arg(medalType);
-            }
-
-            if (seasonCombo) {
-                QString season = seasonCombo->currentText();
-                description += QString("Season: %1.").arg(season);
-            }
-
-            if (multiCountrySelector) {
-                QStringList countries;
-                for (QListWidgetItem* item : multiCountrySelector->selectedItems()) {
-                    countries.append(item->text());
-                }
-
-                if (!countries.isEmpty()) {
-                    description += "\n\nSelected countries: " + countries.join(", ");
-                }
-            }
-            break;
-
-    case GeographicResults:
-            title = "Geographic Results Report";
-            if (yearCombo) {
-                description = QString("This report shows the geographic distribution of Olympic medals in %1. ")
-                                  .arg(yearCombo->currentText());
-
-                if (medalTypeCombo) {
-                    QString medalType = medalTypeCombo->currentText();
-                    description += QString("Medal type: %1. ").arg(medalType);
-                }
-
-                if (seasonCombo) {
-                    QString season = seasonCombo->currentText();
-                    description += QString("Season: %1.").arg(season);
-                }
-            }
-            break;
-
-    case StatisticalAnalysis:
-            title = "Statistical Analysis Report";
-            if (countryCombo) {
-                description = QString("This report presents statistical analysis of Olympic performance for %1. ")
-                                  .arg(countryCombo->currentText());
-
-                QComboBox* analysisTypeCombo = findChild<QComboBox*>("analysisTypeCombo");
-                if (analysisTypeCombo) {
-                    description += QString("Analysis type: %1. ").arg(analysisTypeCombo->currentText());
-                }
-
-                if (seasonCombo) {
-                    QString season = seasonCombo->currentText();
-                    description += QString("Season: %1.").arg(season);
-                }
-            }
-            break;
-    }
-
-    description += "\n\nThis report was generated as part of the analysis of 120 years of Olympic history data.";
-
-    bool success = exportManager.generateReport(this, title, description, chart);
-
-    if (!success) {
-            QMessageBox::critical(this, tr("Report Generation Failed"),
-                                  tr("Failed to generate report. Please try again."));
-    }
+    ReportDialog dialog(this, chart, nullptr);
+    dialog.exec();
 }
 
 QMap<int, int> OlympicGraphView::getMedalCountsByYear(const QString& normalizedCountry, const QString& medalType, const QString& season)

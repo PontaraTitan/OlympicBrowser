@@ -21,7 +21,6 @@ bool Controller::loadCSV(const QString& filePath) {
     db->clear();
     QTextStream in(&file);
 
-    // Skip header line
     if (!in.atEnd()) {
         in.readLine();
     }
@@ -35,7 +34,6 @@ bool Controller::loadCSV(const QString& filePath) {
         QString currentField;
         bool inQuotes = false;
 
-        // Parse CSV line with proper quote handling
         for (int i = 0; i < line.length(); ++i) {
             QChar currentChar = line[i];
 
@@ -43,7 +41,6 @@ bool Controller::loadCSV(const QString& filePath) {
                 inQuotes = !inQuotes;
             }
             else if (currentChar == ',' && !inQuotes) {
-                // Remove surrounding quotes if they exist
                 if (currentField.startsWith('\"') && currentField.endsWith('\"')) {
                     currentField = currentField.mid(1, currentField.length() - 2);
                 }
@@ -55,7 +52,6 @@ bool Controller::loadCSV(const QString& filePath) {
             }
         }
 
-        // Add the last field
         if (currentField.startsWith('\"') && currentField.endsWith('\"')) {
             currentField = currentField.mid(1, currentField.length() - 2);
         }
@@ -83,7 +79,7 @@ bool Controller::loadCSV(const QString& filePath) {
         }
 
         lineCount++;
-        if (lineCount % 1000 == 0) {  // Update progress every 1000 lines for better performance
+        if (lineCount % 1000 == 0) {
             emit progressUpdated((lineCount * 100) / totalLines);
             QApplication::processEvents();  // Keep UI responsive
         }

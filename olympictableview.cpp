@@ -4,6 +4,7 @@
 
 #include "olympictableview.h"
 #include "exportmanager.h"
+#include "reportdialog.h"
 
 OlympicTableView::OlympicTableView(QWidget *parent)
     : QWidget(parent)
@@ -204,29 +205,6 @@ void OlympicTableView::exportData() {
 }
 
 void OlympicTableView::generateReport() {
-    ExportManager exportManager;
-
-    QString title = "Olympic Data Report";
-    QString description = QString("This report contains filtered Olympic data showing %1 out of %2 total records.")
-                              .arg(proxyModel->rowCount())
-                              .arg(sourceModel->rowCount());
-
-    if (!filterRows.isEmpty()) {
-        description += "\n\nApplied filters:";
-        for (const FilterRow& row : filterRows) {
-            QString pattern = row.patternEdit->text();
-            if (!pattern.isEmpty()) {
-                description += QString("\n- Column '%1': %2")
-                                   .arg(row.columnCombo->currentText())
-                                   .arg(pattern);
-            }
-        }
-    }
-
-    bool success = exportManager.generateReport(this, title, description, nullptr, tableView);
-
-    if (!success) {
-        QMessageBox::critical(this, tr("Report Generation Failed"),
-                              tr("Failed to generate report. Please try again."));
-    }
+    ReportDialog dialog(this, nullptr, tableView);
+    dialog.exec();
 }

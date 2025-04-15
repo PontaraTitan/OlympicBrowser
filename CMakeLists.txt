@@ -31,6 +31,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         olympictableview.h olympictableview.cpp
         olympicgraphview.h olympicgraphview.cpp
         exportmanager.h exportmanager.cpp
+        reportdialog.h reportdialog.cpp
     )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET OlympicBrowser APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR

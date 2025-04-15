@@ -1,4 +1,7 @@
+#include <QMessageBox>
+
 #include "mainwindow.h"
+#include "reportdialog.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -77,6 +80,11 @@ void MainWindow::setupMenu()
     connect(statisticalAction, &QAction::triggered, this, [this]() { onGraphModeChanged(4); });
 
     menuBar->addMenu(graphModeMenu);
+
+    QMenu* exportMenu = menuBar->addMenu("Exportar");
+
+    combinedReportAction = exportMenu->addAction("Gerar Relatório Combinado");
+    connect(combinedReportAction, &QAction::triggered, this, &MainWindow::generateCombinedReport);
 }
 
 void MainWindow::handleDataLoaded(bool success) {
@@ -131,4 +139,28 @@ void MainWindow::onGraphModeChanged(int mode)
     if (graphView) {
         graphView->setGraphMode(static_cast<OlympicGraphView::GraphMode>(mode));
     }
+}
+
+void MainWindow::generateCombinedReport()
+{
+    if (!tableView || !graphView) {
+        QMessageBox::warning(this, tr("Report Generation"),
+                             tr("Data needs to be loaded first."));
+        return;
+    }
+
+    // Capturar o gráfico atual
+    QChart* currentChart = nullptr;
+    if (graphView) {
+        currentChart = graphView->findChild<QChartView*>()->chart();
+    }
+
+    // Capturar a tabela atual
+    QTableView* currentTable = nullptr;
+    if (tableView) {
+        currentTable = tableView->findChild<QTableView*>();
+    }
+
+    ReportDialog dialog(this, currentChart, currentTable);
+    dialog.exec();
 }

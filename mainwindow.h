@@ -32,6 +32,7 @@ private slots:
     void updateProgress(int progress);
     void switchView(ViewMode mode);
     void onGraphModeChanged(int mode);
+    void generateCombinedReport();
 
 private:
     void setupMenu();
@@ -55,6 +56,7 @@ private:
     QAction* countryComparisonAction;
     QAction* geographicAction;
     QAction* statisticalAction;
+    QAction* combinedReportAction;
 
     ViewMode currentViewMode;
 };
